@@ -66,15 +66,15 @@ public:
 class free_particle_t {
 public:
 	// a particle that is not (yet) part of the dla (not snapped to grid)
-    double x;
-    double y;
-    bool hit_dla;
-    free_particle_t (const double x, const double y) :x(x), y(y), hit_dla(false) {};
+	double x;
+	double y;
+	bool hit_dla;
+	free_particle_t (const double x, const double y) :x(x), y(y), hit_dla(false) {};
 
-    double radial_displacement() {return sqrt((x-o_x)*(x-o_x)+(y-o_y)*(y-o_y));};
-    void print() {cout << x << " " << y <<  " " << hit_dla << endl;};
-    int64_t px () {return (int64_t)(x+0.5);};
-    int64_t py () {return (int64_t)(y+0.5);};
+	double radial_displacement() {return sqrt((x-o_x)*(x-o_x)+(y-o_y)*(y-o_y));};
+	void print() {cout << x << " " << y <<  " " << hit_dla << endl;};
+	int64_t px () {return (int64_t)(x+0.5);};
+	int64_t py () {return (int64_t)(y+0.5);};
 };
 
 inline bool is_in_world(free_particle_t& p, const int64_t r_sqr)
@@ -109,10 +109,10 @@ inline bool has_hit_dla(free_particle_t& p)
 inline double unif_real_01 () {
 	// thread safe rng!
 	// non-reproducible results because threading is non-deterministic
-    uniform_real_distribution<double> distribution {0.0, 1.0};
-    static mt19937 random_engine {random_seed};
+	uniform_real_distribution<double> distribution {0.0, 1.0};
+	static mt19937 random_engine {random_seed};
 
-    return distribution(random_engine);
+	return distribution(random_engine);
 }
 
 free_particle_t BM_until_hit(double sample_dla_radius, double sample_world_radius_sqr)
@@ -143,7 +143,7 @@ free_particle_t BM_until_hit(double sample_dla_radius, double sample_world_radiu
 		// if we are outside of the disc inscribing dla + long jump radius, do a 'kangaroo' circular jump
 		// choose jump radius as large as possible
 		if (p.radial_displacement()>dla_radius+particle_radius+long_jump_radius) {
-            jump_radius = p.radial_displacement()-dla_radius;
+			jump_radius = p.radial_displacement()-dla_radius;
 			theta = unif_real_01()*2.0*PI;
 			p.x += jump_radius * cos(theta);
 			p.y += jump_radius * sin(theta);
@@ -161,8 +161,8 @@ free_particle_t BM_until_hit(double sample_dla_radius, double sample_world_radiu
 			image.get_pixel(px,py, r,g,b);
 
 		if (b==0) {
-            // long jump
-            jump_radius = long_jump_radius;
+			// long jump
+			jump_radius = long_jump_radius;
 			theta = unif_real_01()*2.0*PI;
 			p.x += jump_radius * cos(theta);
 			p.y += jump_radius * sin(theta);
@@ -170,8 +170,8 @@ free_particle_t BM_until_hit(double sample_dla_radius, double sample_world_radiu
 		}
 
 		if (b==127) {
-            // medium jump
-            jump_radius = med_jump_radius;
+			// medium jump
+			jump_radius = med_jump_radius;
 			theta = unif_real_01()*2.0*PI;
 			p.x += jump_radius * cos(theta);
 			p.y += jump_radius * sin(theta);
@@ -237,7 +237,7 @@ void add_particle_to_dla(const int64_t x, const int64_t y)
 
 void colour_in_particle(dla_particle_t& p, unsigned char r, unsigned char g, unsigned char b)
 {
-    // make the particle at p have colour (r,g,b)
+	// make the particle at p have colour (r,g,b)
 	const int x = p.x;
 	const int y = p.y;
 	int i,j;
@@ -255,11 +255,11 @@ void colour_in_particle(dla_particle_t& p, unsigned char r, unsigned char g, uns
 int main()
 {
 	cout << setprecision(2) << fixed;
-    image.set_all_channels(0,0,0);
+	image.set_all_channels(0,0,0);
 
 	list<dla_particle_t> dla_particles;
 
-    // book-keeping:
+	// book-keeping:
 	// we use the red channel to mark which pixels dla has covered
 	// we use the green/blue channel for bookkeeping, see add_particle_to_dla for details
 	// the 'true' colours of the image are set at the very end
@@ -275,7 +275,7 @@ int main()
 	cout << "\rsetting initial particle... done (radius " << particle_radius << ", origin " << o_x << "," << o_y << ")." << endl;
 	if (write_preview_images) cout << "preview iterations: " << preview_iter << endl;
 
-    // prepare for main loop
+	// prepare for main loop
 	int64_t iter = 0; // BMs
 	int64_t iter_collate = 0;
 	int64_t success = 0; // BMs that hit the dla
@@ -381,9 +381,9 @@ int main()
 		// status report
 		if (iter >= next_status_report) {
 			cout << "\r" << success << "/" << iter << " particles (radius " << (int)dla_radius
-				 << ", P[reject]=" << (double)(iter_collate-success_collate)/(double)iter_collate
-				 << ", P[collision|success]=" << (double)collisions_collate/(double)success_collate
-				 << ", BMs_per_collate=" << max_worker_threads*BMs_per_thread_per_collate << ")                  ";
+				<< ", P[reject]=" << (double)(iter_collate-success_collate)/(double)iter_collate
+				<< ", P[collision|success]=" << (double)collisions_collate/(double)success_collate
+				<< ", BMs_per_collate=" << max_worker_threads*BMs_per_thread_per_collate << ")                  ";
 			next_status_report = iter + min_BMs_per_status_report;
 		}
 
@@ -411,24 +411,24 @@ int main()
 	// add colours (to new image)
 	// red -> yellow -> green -> cyan -> blue -> purple
 	// each '->' is 255 steps
-    int64_t particles_per_colour = dla_particles.size()/(5*255);
-    cout << particles_per_colour << " particles per colour" << endl;
-    if (particles_per_colour==0) {
+	int64_t particles_per_colour = dla_particles.size()/(5*255);
+	cout << particles_per_colour << " particles per colour" << endl;
+	if (particles_per_colour==0) {
 		cout << "not enough particles to shade (" << 5*255 << " needed, have " << dla_particles.size() << ")" << endl;
 		image.save_image("dla.bmp");
 		return 0;
-    }
+	}
 
-    unsigned char r = 255;
-    unsigned char g = 0;
-    unsigned char b = 0;
-    list<dla_particle_t>::size_type i = 0;
-    list<dla_particle_t>::iterator i_iter = dla_particles.begin();
+	unsigned char r = 255;
+	unsigned char g = 0;
+	unsigned char b = 0;
+	list<dla_particle_t>::size_type i = 0;
+	list<dla_particle_t>::iterator i_iter = dla_particles.begin();
 
-    // red -> yellow
-    cout << "writing colours...";
-    image.set_all_channels(0,0,0);
-    while (true) {
+	// red -> yellow
+	cout << "writing colours...";
+	image.set_all_channels(0,0,0);
+	while (true) {
 		dla_particle_t& p = *i_iter;
 		colour_in_particle(p, r,g,b);
 		++i;
@@ -437,9 +437,9 @@ int main()
 			if (g==255) break;
 			++g;
 		}
-    }
+	}
 	// yellow -> green
-    while (true) {
+	while (true) {
 		dla_particle_t& p = *i_iter;
 		colour_in_particle(p, r,g,b);
 		++i;
@@ -448,8 +448,8 @@ int main()
 			if (r==0) break;
 			--r;
 		}
-    }
-    // green -> cyan
+	}
+	// green -> cyan
 	while (true) {
 		dla_particle_t& p = *i_iter;
 		colour_in_particle(p, r,g,b);
@@ -459,8 +459,8 @@ int main()
 			if (b==255) break;
 			++b;
 		}
-    }
-    // cyan -> blue
+	}
+	// cyan -> blue
 	while (true) {
 		dla_particle_t& p = *i_iter;
 		colour_in_particle(p, r,g,b);
@@ -470,8 +470,8 @@ int main()
 			if (g==0) break;
 			--g;
 		}
-    }
-    // blue -> purple
+	}
+	// blue -> purple
 	while (true) {
 		if (i_iter==dla_particles.end()) break;
 		dla_particle_t& p = *i_iter;
@@ -482,11 +482,11 @@ int main()
 			if (r==255) break;
 			++r;
 		}
-    }
+	}
 
-    cout << "done." << endl;
+	cout << "done." << endl;
 
 
-    image.save_image("dla.bmp");
-    return 0;
+	image.save_image("dla.bmp");
+	return 0;
 }
