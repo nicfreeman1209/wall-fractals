@@ -12,13 +12,13 @@ bitmap_image image {x_res, y_res};
 sampler_t sample {138};
 
 const double p = 1.0; // off->on rate per pixel
-const double f = 0.00002; // fire rate per pixel, SoC should occur with p>>f
+const double f = 0.00001; // fire rate per pixel, SoC should occur with p>>f
 const int64_t n_pixels = x_res*y_res;
 
 const double global_fire_rate = n_pixels*f;
 const double e = 2.7182818284;
 
-const double max_fires = 1e5;
+const double max_fires = 5e4;
 
 class point_t
 {
@@ -36,7 +36,7 @@ inline void handle_neighbour (const int x, const int y)
 	static unsigned char r,g,b;
 	if (x>=0 && x<x_res && y>=0 && y<y_res) {
 		image.get_pixel(x,y, r,g,b);
-		if (r==255) fire.emplace_back(x,y);
+		if (r==0) fire.emplace_back(x,y);
 	}
 }
 
@@ -46,10 +46,10 @@ int main()
 	unsigned char r,g,b;
 
 	cout << "setting initial state...";
-	image.set_all_channels(0,0,0);
+	image.set_all_channels(255,255,255);
 	for (x=0; x<x_res; ++x) {
 	for (y=0; y<y_res; ++y) {
-		if (sample.unif_real_01()>0.5) image.set_pixel(x,y, 255,255,255);
+		if (sample.unif_real_01()>0.5) image.set_pixel(x,y, 0,0,0);
 	}
 	}
 	cout << "done" << endl;
@@ -70,7 +70,7 @@ int main()
 		for (i=0; i<switched_on; ++i) {
 			x = sample.unif_real_01() * x_res;
 			y = sample.unif_real_01() * y_res;
-			image.set_pixel(x,y, 255,255,255);
+			image.set_pixel(x,y, 0,0,0);
 		}
 
 		// burn
@@ -81,12 +81,12 @@ int main()
 		{
 			point_t& p = fire.front();
 			image.get_pixel(p.x,p.y, r,g,b);
-			if (r==255) {
+			if (r==0) {
 				handle_neighbour(p.x+1,p.y);
 				handle_neighbour(p.x-1,p.y);
 				handle_neighbour(p.x,p.y+1);
 				handle_neighbour(p.x,p.y-1);
-				image.set_pixel(p.x,p.y, 0,0,0);
+				image.set_pixel(p.x,p.y, 255,255,255);
 			}
 			fire.pop_front();
 		}
