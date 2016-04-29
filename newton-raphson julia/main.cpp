@@ -86,7 +86,7 @@ int main()
 		x += x_incr;
 		if (i%(x_res/100)==0) cout << "\rprogress: " << (double)i/(double)x_res;
 	}
-	image.save_image("julia.bmp");
+	image.save_image("newton.bmp");
 
 	return 0;
 }
