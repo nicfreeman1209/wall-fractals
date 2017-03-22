@@ -11,13 +11,18 @@
 using namespace std;
 
 // image
-const int64_t x_res = 2*10236; //pixels
-const int64_t y_res = 2*7087;
+const int64_t x_res = 35000; //pixels
+const int64_t y_res = 35000;
+
+const int64_t tiles_sqrt = 3; // write output into tiles_sqr^2 of equally sized tiles
+const int64_t tile_x_res = x_res / tiles_sqrt;
+const int64_t tile_y_res = y_res / tiles_sqrt;
 
 bitmap_image image {x_res, y_res};
+bitmap_image tile {tile_x_res, tile_y_res};
 
 // particles
-const double particle_radius = 7; // values <2 cause serious lattice effects; 0 -> particle==pixel
+const double particle_radius = 6; // values <2 cause serious lattice effects; 0 -> particle==pixel
 
 // jump distances
 // (for when BM has enough space to make big jump without hitting the dla)
@@ -28,12 +33,12 @@ const double long_jump_radius = 25;
 const double long_jump_radius_sqr = long_jump_radius*long_jump_radius;
 
 // border of image, in which we don't draw dla
-const int64_t border = max(long_jump_radius, (double)(min(x_res,y_res)*0.5*0.07)) + particle_radius;
+const int64_t border = 9*particle_radius;
 
 // dla/world radii
 // these vary as the dla grows
 double dla_radius = particle_radius;
-const double padding_factor = 10; // if a particles goes this far away (in multiples of radii) from the centre of the circle inscribing dla, delete the particle
+const double padding_factor = 10; // if a particles goes this far away (in multiples of radii) from the centre of the circle inscribing dla, delete the particle (a "rejection")
 double world_radius_sqr = pow(dla_radius*padding_factor, 2);
 
 // origin
@@ -41,13 +46,26 @@ const int64_t o_x = x_res/2;
 const int64_t o_y = y_res/2;
 
 // threading
-const int max_worker_threads = 7; // leave one thread free to bookkeep the worker threads
-const int max_BMs_per_thread_per_collate = 500;
+// the simulation proceeds in stages:
+//   during a stage each worker thread thread does its own calcs, with no knowledge of what the other threads do
+//   at the end of each stage the main thread receives data back from all the worker threads, collates and processes it, then triggers the start of the next stage
+// in more detail:
+//   (1) during a stage, each thread simulates BMs until they hit the dla, and records the positions at which they hit
+//       throughout the stage, the dla is *kept constant*, no new particles are added, and each worker thread uses the same picture of the dla
+//   (2) at the end of the stage, each worker thread sends back a list of positions that were hit by the BMs
+//       the main thread then goes through these positions, one by one, and adds corresponding particles to the dla (a "collate")
+//       when the main thread finds a particle (call it X) trying to attach into a region of space that some other particle already been attached too (a "collision") it ignores X and moves on
+//       after all positions are processed, the main thread initiates the next stage, and the worker threads now see the updated dla
+//   (3) the reason for all this is that the dla (i.e. the bitmap_image, which is a C style array) can be read asynchronously, but cannot be written too asynchronously
+//       so, this algorithm runs best on a single processor machine with lots of cores and lots of RAM
+//
+const int max_worker_threads = 7; // leave one thread free to bookkeep the worker threads (i.e. change it if you have !=8 cores)
+const int max_BMs_per_thread_per_collate = 300; // hard limit
 int BMs_per_thread_per_collate = -1;
 
 // in progress info
 bool write_preview_images = false;
-const int64_t preview_iter = 80*sqrt(x_res*y_res)/(1+particle_radius*particle_radius); // BMs per preview
+const int64_t preview_iter = 80*sqrt(x_res*y_res)/(1+particle_radius*particle_radius); // BMs per preview (magic number)
 const int64_t min_BMs_per_status_report = 500;
 
 // math consts
@@ -252,6 +270,30 @@ void colour_in_particle(dla_particle_t& p, unsigned char r, unsigned char g, uns
 	}
 }
 
+bool save_image_tiled (bitmap_image& full_image, string image_name)
+{
+    // save image as individual tiles
+    int i;
+    int j;
+    for (i=0; i<tiles_sqrt; ++i) {
+    for (j=0; j<tiles_sqrt; ++j) {
+        tile.set_all_channels(0,0,0);
+
+        const int64_t x_start = i*tile_x_res;
+        const int64_t y_start = j*tile_y_res;
+        int64_t x,y;
+        for (x=0; x<tile_x_res; ++x) {
+        for (y=0; y<tile_y_res; ++y) {
+            unsigned char r,g,b;
+            full_image.get_pixel(x_start+x,y_start+y, r,g,b);
+            tile.set_pixel(x,y, r,g,b);
+        }
+        }
+        tile.save_image(image_name + "_" + to_string(i) + "_" + to_string(j) + ".bmp");
+    }
+    }
+}
+
 int main()
 {
 	cout << setprecision(2) << fixed;
@@ -271,7 +313,7 @@ int main()
 	dla_particle_t dla_p {(int)o_x,(int)o_y};
 	dla_particles.push_back(dla_p);
 
-	image.save_image("dla_preview.bmp");
+	save_image_tiled(image, "dla_preview");
 	cout << "\rsetting initial particle... done (radius " << particle_radius << ", origin " << o_x << "," << o_y << ")." << endl;
 	if (write_preview_images) cout << "preview iterations: " << preview_iter << endl;
 
@@ -304,7 +346,9 @@ int main()
 		success_collate = 0;
 		collisions_collate = 0;
 		world_radius_sqr = pow(dla_radius*padding_factor+1, 2); // +1 for case of particle_radius==0
-		BMs_per_thread_per_collate = max((int64_t)1,min((int64_t)max_BMs_per_thread_per_collate, (int64_t)(PI*dla_radius/(50*(1+2*particle_radius)))));
+		BMs_per_thread_per_collate = max((int64_t)1,min((int64_t)max_BMs_per_thread_per_collate, (int64_t)(PI*dla_radius/(150*(1+2*particle_radius)))));
+        // 150 is a magic number, increase it to lower P[collision|success]
+        // if BMs_per_thread_per_collate gets too low then the threading will be less efficient, since more time will be spent waiting while the main thread collates
 
 		int datapoints_requested = 0; // how many we spawned threads for, so far
 		int datapoints_recieved = 0; // how many we got back, so far
@@ -354,11 +398,11 @@ int main()
 				cout.flush();
 				cout << "found particle outside max dla radius at (" << px << "," << py << ")" << endl;
 				if (is_in_image(px,py)) image.set_pixel(px, py, 255,0,0);
-				image.save_image("dla_preview.bmp");
+				save_image_tiled(image, "dla_preview");
 				break;
 			}
 
-			// add to dla
+			// attempt to add to dla
 			unsigned char r,g,b;
 			image.get_pixel(px,py, r,g,b);
 			if (g!=127) {
@@ -367,6 +411,7 @@ int main()
 				++collisions_collate;
 			}
 			else {
+                // add
 				add_particle_to_dla(px, py);
 				dla_particle_t dla_p {(int)px,(int)py};
 				dla_particles.push_back(dla_p);
@@ -389,7 +434,7 @@ int main()
 
 		if (finished || (write_preview_images && iter>=next_preview_iter)) {
 			next_preview_iter = iter + preview_iter;
-			image.save_image("dla_preview.bmp");
+			save_image_tiled(image, "dla_preview");
 		}
 
 		if (iter_collate>100 && success_collate==0) {
@@ -415,7 +460,7 @@ int main()
 	cout << particles_per_colour << " particles per colour" << endl;
 	if (particles_per_colour==0) {
 		cout << "not enough particles to shade (" << 5*255 << " needed, have " << dla_particles.size() << ")" << endl;
-		image.save_image("dla.bmp");
+		save_image_tiled(image, "dla");
 		return 0;
 	}
 
@@ -427,7 +472,7 @@ int main()
 
 	// red -> yellow
 	cout << "writing colours...";
-	image.set_all_channels(0,0,0);
+	image.set_all_channels(30,30,30);
 	while (true) {
 		dla_particle_t& p = *i_iter;
 		colour_in_particle(p, r,g,b);
@@ -487,6 +532,6 @@ int main()
 	cout << "done." << endl;
 
 
-	image.save_image("dla.bmp");
+	save_image_tiled(image, "dla");
 	return 0;
 }
