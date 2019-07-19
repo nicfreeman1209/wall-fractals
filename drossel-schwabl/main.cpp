@@ -5,8 +5,14 @@
 
 using namespace std;
 
-const int64_t x_res = 2*10236; // pixels
-const int64_t y_res = 2*7087;
+const bool write_video_frames = true;
+
+const int64_t x_out = 300; // output resolution
+const int64_t y_out = 200;
+bitmap_image image_out {x_out, y_out};
+
+const int64_t x_res = 12000; // internal resolution
+const int64_t y_res = 8000;
 bitmap_image image {x_res, y_res};
 
 sampler_t sample {138};
@@ -40,6 +46,35 @@ inline void handle_neighbour (const int x, const int y)
 	}
 }
 
+void write_image(bitmap_image& image_in, const string& file_name)
+{
+	// average pixels to requested size
+	int64_t x,y;
+	int64_t x_scale = x_res / x_out;
+	int64_t y_scale = y_res / y_out;
+	for (x=0; x<x_out; ++x)	{
+	for (y=0; y<y_out; ++y) {
+		int64_t val = 0.0;
+		int64_t i,j;
+		int64_t n=0;
+		for (i=x*x_scale; i<(x+1)*x_scale; ++i) {
+		for (j=y*y_scale; j<(y+1)*y_scale; ++j) {
+			if (x>=x_res || y>=y_res) continue;
+			unsigned char r,g,b;
+			image_in.get_pixel(i,j, r,g,b);
+			val += r;
+			++n;
+		}
+		}
+		val /= (double)n;
+		val *= 255;
+		image_out.set_pixel(x,y, val, val, val);
+	}
+	}
+
+	image_out.save_image(file_name);
+}
+
 int main()
 {
 	int i,x,y;
@@ -57,13 +92,30 @@ int main()
     int64_t n_fire = 0;
     double model_time = 0.0;
 
+	double fps = 90.0;
+	double frame_interval = 1.0/fps;
+	double next_frame = 0.0;
+	int64_t frame_number = 0;
+
+	double time = 0.0;
 	double burn_time;
 	int64_t switched_on;
 
+	cout << "\rcurrent frame: " << frame_number << " current time: " << time;
 	while (true)
 	{
+		// record frame if needed
+		while (next_frame <= time && write_video_frames)
+		{
+			write_image(image, "DS_" + to_string(frame_number) + ".bmp");
+			++frame_number;
+			next_frame += frame_interval;
+		}
+		cout << "\rcurrent frame: " << frame_number << " current time: " << time;
+
 		// get time to next fire
 		burn_time = sample.exp_dist(global_fire_rate);
+		time += burn_time;
 
 		// switch on clocks in between now and the next fire
 		switched_on = n_pixels * (1-pow(e,-p*burn_time)); // expected number of switched on clocks, use as proxy for real (p>>f so SLLN says its a good estimate)
@@ -96,6 +148,8 @@ int main()
 		++n_fire;
 		if (n_fire%1000==0) cout << "\rn_fire = " << n_fire;
 		if (n_fire>=max_fires) break;
+
+		if (time>=60.0) break;
 	}
 	cout << "\rn_fire = " << n_fire << endl;
 	cout << "model_time = " << model_time << endl;
