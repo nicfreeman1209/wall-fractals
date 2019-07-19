@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include "bitmap_image.hpp"
 #include <cmath>
@@ -11,10 +12,10 @@
 using namespace std;
 
 // image
-const int64_t x_res = 35000; //pixels
-const int64_t y_res = 35000;
+const int64_t x_res = 1920*10; // pixels
+const int64_t y_res = 1080*10;
 
-const int64_t tiles_sqrt = 3; // write output into tiles_sqr^2 of equally sized tiles
+const int64_t tiles_sqrt = 1; // write output into tiles_sqrt^2 of equally sized tiles
 const int64_t tile_x_res = x_res / tiles_sqrt;
 const int64_t tile_y_res = y_res / tiles_sqrt;
 
@@ -27,7 +28,7 @@ const double particle_radius = 6; // values <2 cause serious lattice effects; 0 
 // jump distances
 // (for when BM has enough space to make big jump without hitting the dla)
 // needs tuning: too big and book-keeping the regions costs too much, too small and the BMs cost too much + lattice effects occur
-const double med_jump_radius = 5;
+const double med_jump_radius = 8;
 const double med_jump_radius_sqr = med_jump_radius*med_jump_radius;
 const double long_jump_radius = 25;
 const double long_jump_radius_sqr = long_jump_radius*long_jump_radius;
@@ -44,6 +45,8 @@ double world_radius_sqr = pow(dla_radius*padding_factor, 2);
 // origin
 const int64_t o_x = x_res/2;
 const int64_t o_y = y_res/2;
+const double o_x_dbl = o_x;
+const double o_y_dbl = o_y;
 
 // threading
 // the simulation proceeds in stages:
@@ -58,6 +61,7 @@ const int64_t o_y = y_res/2;
 //       after all positions are processed, the main thread initiates the next stage, and the worker threads now see the updated dla
 //   (3) the reason for all this is that the dla (i.e. the bitmap_image, which is a C style array) can be read asynchronously, but cannot be written too asynchronously
 //       so, this algorithm runs best on a single processor machine with lots of cores and lots of RAM
+//   (4) see the real-time output for details of how many collisions are occurring
 //
 const int max_worker_threads = 7; // leave one thread free to bookkeep the worker threads (i.e. change it if you have !=8 cores)
 const int max_BMs_per_thread_per_collate = 300; // hard limit
@@ -270,7 +274,7 @@ void colour_in_particle(dla_particle_t& p, unsigned char r, unsigned char g, uns
 	}
 }
 
-bool save_image_tiled (bitmap_image& full_image, string image_name)
+void save_image_tiled (bitmap_image& full_image, string image_name)
 {
     // save image as individual tiles
     int i;
@@ -294,6 +298,17 @@ bool save_image_tiled (bitmap_image& full_image, string image_name)
     }
 }
 
+pair<double,double> cart_to_polar(int64_t x_int, int64_t y_int)
+{
+    double x,y,r, theta;
+    x = x_int-o_x_dbl;
+    y = y_int-o_y_dbl;
+    r = sqrt(x*x+y*y);
+    theta = atan(y/x);
+    pair<double,double> ret {r,theta};
+    return ret;
+}
+
 int main()
 {
 	cout << setprecision(2) << fixed;
@@ -308,14 +323,27 @@ int main()
 	// the particles vector stores the order in which the particles landed
 
 	// colour initial disc
-	cout << "setting initial particle... ";
+	cout << "making allocs & setting initial particle... ";
 	add_particle_to_dla(o_x, o_y);
+	/*for(int i=0; i<10; ++i)
+    {
+        int x_incr = ((double)x_res/2.0)*(2.0*unif_real_01()-1.0);
+        int y_incr = ((double)y_res/2.0)*(2.0*unif_real_01()-1.0);
+        add_particle_to_dla(o_x+x_incr, o_y+y_incr);
+    }*/
 	dla_particle_t dla_p {(int)o_x,(int)o_y};
 	dla_particles.push_back(dla_p);
 
-	save_image_tiled(image, "dla_preview");
-	cout << "\rsetting initial particle... done (radius " << particle_radius << ", origin " << o_x << "," << o_y << ")." << endl;
+	if (write_preview_images) save_image_tiled(image, "dla_preview");
+	cout << "done (particle radius " << particle_radius << ", origin " << o_x << "," << o_y << ")." << endl;
 	if (write_preview_images) cout << "preview iterations: " << preview_iter << endl;
+
+	// file to dump particle positions
+	ofstream f;
+	f.open("particle_locs.csv");
+	f << "particle radius is " << particle_radius << endl;
+	f << "writing coordinates (x,y,r,theta) relative to origin" << endl;
+	f << "id,x,y,r,theta\n";
 
 	// prepare for main loop
 	int64_t iter = 0; // BMs
@@ -396,9 +424,9 @@ int main()
 				finished = true;
 				cout << endl;
 				cout.flush();
-				cout << "found particle outside max dla radius at (" << px << "," << py << ")" << endl;
+				cout << "found particle outside max allowed radius at (" << px << "," << py << ")" << endl;
 				if (is_in_image(px,py)) image.set_pixel(px, py, 255,0,0);
-				save_image_tiled(image, "dla_preview");
+				if (write_preview_images) save_image_tiled(image, "dla_preview");
 				break;
 			}
 
@@ -406,7 +434,7 @@ int main()
 			unsigned char r,g,b;
 			image.get_pixel(px,py, r,g,b);
 			if (g!=127) {
-				// adding this particle would overlap with an already added particle
+				// don't add; adding this particle would overlap with an already added particle
 				++collisions;
 				++collisions_collate;
 			}
@@ -416,6 +444,9 @@ int main()
 				dla_particle_t dla_p {(int)px,(int)py};
 				dla_particles.push_back(dla_p);
 				dla_radius = max(dla_radius, p.radial_displacement()+particle_radius);
+
+				pair<double,double> polar = cart_to_polar(px,py);
+				f << success << "," << px-o_x << "," << py-o_y << "," << polar.first << "," << polar.second << endl;
 			}
 
 			++success;
@@ -432,7 +463,7 @@ int main()
 			next_status_report = iter + min_BMs_per_status_report;
 		}
 
-		if (finished || (write_preview_images && iter>=next_preview_iter)) {
+		if (write_preview_images && (iter>=next_preview_iter || finished)) {
 			next_preview_iter = iter + preview_iter;
 			save_image_tiled(image, "dla_preview");
 		}
@@ -472,7 +503,7 @@ int main()
 
 	// red -> yellow
 	cout << "writing colours...";
-	image.set_all_channels(30,30,30);
+	image.set_all_channels(0,0,0); // background
 	while (true) {
 		dla_particle_t& p = *i_iter;
 		colour_in_particle(p, r,g,b);
@@ -531,7 +562,10 @@ int main()
 
 	cout << "done." << endl;
 
-
+    cout << "writing image files...";
 	save_image_tiled(image, "dla");
+    cout << "done." << endl;
+
+    f.close();
 	return 0;
 }

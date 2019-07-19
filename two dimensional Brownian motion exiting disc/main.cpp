@@ -73,7 +73,7 @@ int main()
     const int64_t x_res = 2*10236; // pixels
     const int64_t y_res = 2*7087;
 
-    const int64_t seed = 516;
+    const int64_t seed = 517;
 
     bitmap_image image {x_res, y_res};
     image.set_all_channels(255,255,255);
