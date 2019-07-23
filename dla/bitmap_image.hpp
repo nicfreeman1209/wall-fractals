@@ -72,7 +72,7 @@ public:
       load_bitmap();
    }
 
-   bitmap_image(const unsigned int width, const unsigned int height)
+   bitmap_image(const uint64_t width, const uint64_t height)
    : file_name_(""),
      data_  (0),
      length_(0),
@@ -134,60 +134,60 @@ public:
       std::fill(data_,data_ + length_,v);
    }
 
-   inline unsigned char red_channel(const unsigned int x, const unsigned int y) const
+   inline unsigned char red_channel(const uint64_t x, const uint64_t y) const
    {
       return data_[(y * row_increment_) + (x * bytes_per_pixel_ + 2)];
    }
 
-   inline unsigned char green_channel(const unsigned int x, const unsigned int y) const
+   inline unsigned char green_channel(const uint64_t x, const uint64_t y) const
    {
       return data_[(y * row_increment_) + (x * bytes_per_pixel_ + 1)];
    }
 
-   inline unsigned char blue_channel (const unsigned int x, const unsigned int y) const
+   inline unsigned char blue_channel (const uint64_t x, const uint64_t y) const
    {
       return data_[(y * row_increment_) + (x * bytes_per_pixel_ + 0)];
    }
 
-   inline void red_channel(const unsigned int x, const unsigned int y, const unsigned char value)
+   inline void red_channel(const uint64_t x, const uint64_t y, const unsigned char value)
    {
       data_[(y * row_increment_) + (x * bytes_per_pixel_ + 2)] = value;
    }
 
-   inline void green_channel(const unsigned int x, const unsigned int y, const unsigned char value)
+   inline void green_channel(const uint64_t x, const uint64_t y, const unsigned char value)
    {
       data_[(y * row_increment_) + (x * bytes_per_pixel_ + 1)] = value;
    }
 
-   inline void blue_channel (const unsigned int x, const unsigned int y, const unsigned char value)
+   inline void blue_channel (const uint64_t x, const uint64_t y, const unsigned char value)
    {
       data_[(y * row_increment_) + (x * bytes_per_pixel_ + 0)] = value;
    }
 
-   inline unsigned char* row(unsigned int row_index) const
+   inline unsigned char* row(uint64_t row_index) const
    {
       return data_ + (row_index * row_increment_);
    }
 
-   inline void get_pixel(const unsigned int x, const unsigned int y,
+   inline void get_pixel(const uint64_t x, const uint64_t y,
                          unsigned char& red,
                          unsigned char& green,
                          unsigned char& blue)
    {
-      const unsigned int y_offset = y * row_increment_;
-      const unsigned int x_offset = x * bytes_per_pixel_;
+      const uint64_t y_offset = y * row_increment_;
+      const uint64_t x_offset = x * bytes_per_pixel_;
       blue  = data_[y_offset + x_offset + 0];
       green = data_[y_offset + x_offset + 1];
       red   = data_[y_offset + x_offset + 2];
    }
 
-   inline void set_pixel(const unsigned int x, const unsigned int y,
+   inline void set_pixel(const uint64_t x, const uint64_t y,
                          const unsigned char red,
                          const unsigned char green,
                          const unsigned char blue)
    {
-      const unsigned int y_offset = y * row_increment_;
-      const unsigned int x_offset = x * bytes_per_pixel_;
+      const uint64_t y_offset = y * row_increment_;
+      const uint64_t x_offset = x * bytes_per_pixel_;
       data_[y_offset + x_offset + 0] = blue;
       data_[y_offset + x_offset + 1] = green;
       data_[y_offset + x_offset + 2] = red;
@@ -208,13 +208,13 @@ public:
    }
 
    inline bool copy_from(const bitmap_image& source_image,
-                         const unsigned int& x_offset,
-                         const unsigned int& y_offset)
+                         const uint64_t& x_offset,
+                         const uint64_t& y_offset)
    {
       if ((x_offset + source_image.width_ ) > width_ ) { return false; }
       if ((y_offset + source_image.height_) > height_) { return false; }
 
-      for (unsigned int y = 0; y < source_image.height_; ++y)
+      for (uint64_t y = 0; y < source_image.height_; ++y)
       {
          unsigned char* itr1           = row(y + y_offset) + x_offset * bytes_per_pixel_;
          const unsigned char* itr2     = source_image.row(y);
@@ -224,10 +224,10 @@ public:
       return true;
    }
 
-   inline bool region(const unsigned int& x,
-                      const unsigned int& y,
-                      const unsigned int& width,
-                      const unsigned int& height,
+   inline bool region(const uint64_t& x,
+                      const uint64_t& y,
+                      const uint64_t& width,
+                      const uint64_t& height,
                       bitmap_image& dest_image)
    {
       if ((x + width ) > width_ ) { return false; }
@@ -241,7 +241,7 @@ public:
          dest_image.setwidth_height(width,height);
       }
 
-      for (unsigned int r = 0; r < height; ++r)
+      for (uint64_t r = 0; r < height; ++r)
       {
          unsigned char* itr1     = row(r + y) + x * bytes_per_pixel_;
          unsigned char* itr1_end = itr1 + (width * bytes_per_pixel_);
@@ -252,16 +252,16 @@ public:
       return true;
    }
 
-   inline bool set_region(const unsigned int& x,
-                          const unsigned int& y,
-                          const unsigned int& width,
-                          const unsigned int& height,
+   inline bool set_region(const uint64_t& x,
+                          const uint64_t& y,
+                          const uint64_t& width,
+                          const uint64_t& height,
                           const unsigned char& value)
    {
       if ((x + width) > width_)   { return false; }
       if ((y + height) > height_) { return false; }
 
-      for (unsigned int r = 0; r < height; ++r)
+      for (uint64_t r = 0; r < height; ++r)
       {
          unsigned char* itr     = row(r + y) + x * bytes_per_pixel_;
          unsigned char* itr_end = itr + (width * bytes_per_pixel_);
@@ -271,19 +271,19 @@ public:
       return true;
    }
 
-   inline bool set_region(const unsigned int& x,
-                          const unsigned int& y,
-                          const unsigned int& width,
-                          const unsigned int& height,
+   inline bool set_region(const uint64_t& x,
+                          const uint64_t& y,
+                          const uint64_t& width,
+                          const uint64_t& height,
                           const color_plane color,
                           const unsigned char& value)
    {
       if ((x + width) > width_)   { return false; }
       if ((y + height) > height_) { return false; }
 
-      const unsigned int color_plane_offset = offset(color);
+      const uint64_t color_plane_offset = offset(color);
 
-      for (unsigned int r = 0; r < height; ++r)
+      for (uint64_t r = 0; r < height; ++r)
       {
          unsigned char* itr     = row(r + y) + x * bytes_per_pixel_ + color_plane_offset;
          unsigned char* itr_end = itr + (width * bytes_per_pixel_);
@@ -298,10 +298,10 @@ public:
       return true;
    }
 
-   inline bool set_region(const unsigned int& x,
-                          const unsigned int& y,
-                          const unsigned int& width,
-                          const unsigned int& height,
+   inline bool set_region(const uint64_t& x,
+                          const uint64_t& y,
+                          const uint64_t& width,
+                          const uint64_t& height,
                           const unsigned char& red,
                           const unsigned char& green,
                           const unsigned char& blue)
@@ -309,7 +309,7 @@ public:
       if ((x +  width) >  width_) { return false; }
       if ((y + height) > height_) { return false; }
 
-      for (unsigned int r = 0; r < height; ++r)
+      for (uint64_t r = 0; r < height; ++r)
       {
          unsigned char* itr     = row(r + y) + x * bytes_per_pixel_;
          unsigned char* itr_end = itr + (width * bytes_per_pixel_);
@@ -339,28 +339,28 @@ public:
       horizontal_flip();
    }
 
-   inline unsigned int width() const
+   inline uint64_t width() const
    {
       return width_;
    }
 
-   inline unsigned int height() const
+   inline uint64_t height() const
    {
       return height_;
    }
 
-   inline unsigned int bytes_per_pixel() const
+   inline uint64_t bytes_per_pixel() const
    {
       return bytes_per_pixel_;
    }
 
-   inline unsigned int pixel_count() const
+   inline uint64_t pixel_count() const
    {
       return width_ *  height_;
    }
 
-   inline void setwidth_height(const unsigned int width,
-                               const unsigned int height,
+   inline void setwidth_height(const uint64_t width,
+                               const uint64_t height,
                                const bool clear = false)
    {
       delete[] data_;
@@ -410,10 +410,10 @@ public:
       write_bfh(stream,bfh);
       write_bih(stream,bih);
 
-      unsigned int padding = (4 - ((3 * width_) % 4)) % 4;
+      uint64_t padding = (4 - ((3 * width_) % 4)) % 4;
       char padding_data[4] = {0x0,0x0,0x0,0x0};
 
-      for (unsigned int i = 0; i < height_; ++i)
+      for (uint64_t i = 0; i < height_; ++i)
       {
          unsigned char* data_ptr = data_ + (row_increment_ * (height_ - i - 1));
          stream.write(reinterpret_cast<char*>(data_ptr),sizeof(unsigned char) * bytes_per_pixel_ * width_);
@@ -423,7 +423,7 @@ public:
       stream.close();
    }
 
-   inline void set_all_ith_bits_low(const unsigned int bitr_index)
+   inline void set_all_ith_bits_low(const uint64_t bitr_index)
    {
       unsigned char mask = static_cast<unsigned char>(~(1 << bitr_index));
 
@@ -433,7 +433,7 @@ public:
       }
    }
 
-   inline void set_all_ith_bits_high(const unsigned int bitr_index)
+   inline void set_all_ith_bits_high(const uint64_t bitr_index)
    {
       unsigned char mask = static_cast<unsigned char>(1 << bitr_index);
 
@@ -443,7 +443,7 @@ public:
       }
    }
 
-   inline void set_all_ith_channels(const unsigned int& channel, const unsigned char& value)
+   inline void set_all_ith_channels(const uint64_t& channel, const unsigned char& value)
    {
       for (unsigned char* itr = (data_ + channel); itr < (data_ + length_); itr += bytes_per_pixel_)
       {
@@ -459,7 +459,7 @@ public:
       }
    }
 
-   inline void ror_channel(const color_plane color, const unsigned int& ror)
+   inline void ror_channel(const color_plane color, const uint64_t& ror)
    {
       for (unsigned char* itr = (data_ + offset(color)); itr < (data_ + length_); itr += bytes_per_pixel_)
       {
@@ -567,14 +567,14 @@ public:
 
    inline void horizontal_flip()
    {
-      for (unsigned int y = 0; y < height_; ++y)
+      for (uint64_t y = 0; y < height_; ++y)
       {
          unsigned char* itr1 = row(y);
          unsigned char* itr2 = itr1 + row_increment_ - bytes_per_pixel_;
 
          while (itr1 < itr2)
          {
-            for (unsigned int i = 0; i < bytes_per_pixel_; ++i)
+            for (uint64_t i = 0; i < bytes_per_pixel_; ++i)
             {
                unsigned char* p1 = (itr1 + i);
                unsigned char* p2 = (itr2 + i);
@@ -591,7 +591,7 @@ public:
 
    inline void vertical_flip()
    {
-      for (unsigned int y = 0; y < (height_ / 2); ++y)
+      for (uint64_t y = 0; y < (height_ / 2); ++y)
       {
          unsigned char* itr1 = row(y);
          unsigned char* itr2 = row(height_ - y - 1);
@@ -851,8 +851,8 @@ public:
       /*
          Half sub-sample of original image.
       */
-      unsigned int w = 0;
-      unsigned int h = 0;
+      uint64_t w = 0;
+      uint64_t h = 0;
 
       bool odd_width = false;
       bool odd_height = false;
@@ -873,8 +873,8 @@ public:
          odd_height = true;
       }
 
-      unsigned int horizontal_upper = (odd_width)  ? (w - 1) : w;
-      unsigned int vertical_upper   = (odd_height) ? (h - 1) : h;
+      uint64_t horizontal_upper = (odd_width)  ? (w - 1) : w;
+      uint64_t vertical_upper   = (odd_height) ? (h - 1) : h;
 
       dest.setwidth_height(w,h);
       dest.clear();
@@ -895,13 +895,13 @@ public:
       itr2[1] = data_ + row_increment_ + 1;
       itr2[2] = data_ + row_increment_ + 2;
 
-      unsigned int total = 0;
+      uint64_t total = 0;
 
-      for (unsigned int j = 0; j < vertical_upper; ++j)
+      for (uint64_t j = 0; j < vertical_upper; ++j)
       {
-         for (unsigned int i = 0; i < horizontal_upper; ++i)
+         for (uint64_t i = 0; i < horizontal_upper; ++i)
          {
-            for (unsigned int k = 0; k < bytes_per_pixel_; s_itr[k] += bytes_per_pixel_, ++k)
+            for (uint64_t k = 0; k < bytes_per_pixel_; s_itr[k] += bytes_per_pixel_, ++k)
             {
                total = 0;
                total += *(itr1[k]); itr1[k] += bytes_per_pixel_;
@@ -915,7 +915,7 @@ public:
 
          if (odd_width)
          {
-            for (unsigned int k = 0; k < bytes_per_pixel_; s_itr[k] += bytes_per_pixel_, ++k)
+            for (uint64_t k = 0; k < bytes_per_pixel_; s_itr[k] += bytes_per_pixel_, ++k)
             {
                total = 0;
                total += *(itr1[k]); itr1[k] += bytes_per_pixel_;
@@ -925,19 +925,19 @@ public:
             }
          }
 
-         for (unsigned int k = 0; k < bytes_per_pixel_; itr1[k] += row_increment_, ++k);
+         for (uint64_t k = 0; k < bytes_per_pixel_; itr1[k] += row_increment_, ++k);
 
          if (j != (vertical_upper - 1))
          {
-            for (unsigned int k = 0; k < bytes_per_pixel_; itr2[k] += row_increment_, ++k);
+            for (uint64_t k = 0; k < bytes_per_pixel_; itr2[k] += row_increment_, ++k);
          }
       }
 
       if (odd_height)
       {
-         for (unsigned int i = 0; i < horizontal_upper; ++i)
+         for (uint64_t i = 0; i < horizontal_upper; ++i)
          {
-            for (unsigned int k = 0; k < bytes_per_pixel_; s_itr[k] += bytes_per_pixel_, ++k)
+            for (uint64_t k = 0; k < bytes_per_pixel_; s_itr[k] += bytes_per_pixel_, ++k)
             {
                total = 0;
                total += *(itr1[k]); itr1[k] += bytes_per_pixel_;
@@ -949,7 +949,7 @@ public:
 
          if (odd_width)
          {
-            for (unsigned int k = 0; k < bytes_per_pixel_; ++k)
+            for (uint64_t k = 0; k < bytes_per_pixel_; ++k)
             {
                (*(s_itr[k])) = *(itr1[k]);
             }
@@ -982,11 +982,11 @@ public:
       itr2[1] = dest.data_ + dest.row_increment_ + 1;
       itr2[2] = dest.data_ + dest.row_increment_ + 2;
 
-      for (unsigned int j = 0; j < height_; ++j)
+      for (uint64_t j = 0; j < height_; ++j)
       {
-         for (unsigned int i = 0; i < width_; ++i)
+         for (uint64_t i = 0; i < width_; ++i)
          {
-            for (unsigned int k = 0; k < bytes_per_pixel_; s_itr[k] += bytes_per_pixel_, ++k)
+            for (uint64_t k = 0; k < bytes_per_pixel_; s_itr[k] += bytes_per_pixel_, ++k)
             {
                *(itr1[k]) = *(s_itr[k]); itr1[k] += bytes_per_pixel_;
                *(itr1[k]) = *(s_itr[k]); itr1[k] += bytes_per_pixel_;
@@ -996,7 +996,7 @@ public:
             }
          }
 
-         for (unsigned int k = 0; k < bytes_per_pixel_; ++k)
+         for (uint64_t k = 0; k < bytes_per_pixel_; ++k)
          {
             itr1[k] += dest.row_increment_;
             itr2[k] += dest.row_increment_;
@@ -1068,8 +1068,8 @@ public:
       }
    }
 
-   inline double psnr(const unsigned int& x,
-                      const unsigned int& y,
+   inline double psnr(const uint64_t& x,
+                      const uint64_t& y,
                       const bitmap_image& image)
    {
       if ((x + image.width()) > width_)   { return 0.0; }
@@ -1077,10 +1077,10 @@ public:
 
       double mse = 0.0;
 
-      const unsigned int height = image.height();
-      const unsigned int width  = image.width();
+      const uint64_t height = image.height();
+      const uint64_t width  = image.width();
 
-      for (unsigned int r = 0; r < height; ++r)
+      for (uint64_t r = 0; r < height; ++r)
       {
          unsigned char* itr1       = row(r + y) + x * bytes_per_pixel_;
          unsigned char* itr1_end   = itr1 + (width * bytes_per_pixel_);
@@ -1130,7 +1130,7 @@ public:
       }
    }
 
-   inline unsigned int offset(const color_plane color)
+   inline uint64_t offset(const color_plane color)
    {
       switch (channel_mode_)
       {
@@ -1140,7 +1140,7 @@ public:
                                case red_plane   : return 0;
                                case green_plane : return 1;
                                case blue_plane  : return 2;
-                               default          : return std::numeric_limits<unsigned int>::max();
+                               default          : return std::numeric_limits<uint64_t>::max();
                             }
                          }
 
@@ -1150,11 +1150,11 @@ public:
                                case red_plane   : return 2;
                                case green_plane : return 1;
                                case blue_plane  : return 0;
-                               default          : return std::numeric_limits<unsigned int>::max();
+                               default          : return std::numeric_limits<uint64_t>::max();
                             }
                          }
 
-         default       : return std::numeric_limits<unsigned int>::max();
+         default       : return std::numeric_limits<uint64_t>::max();
       }
    }
 
@@ -1177,12 +1177,12 @@ private:
    struct bitmap_file_header
    {
       unsigned short type;
-      unsigned int   size;
+      unsigned int size;
       unsigned short reserved1;
       unsigned short reserved2;
-      unsigned int   off_bits;
+      unsigned int off_bits;
 
-      unsigned int struct_size()
+      uint64_t struct_size()
       {
          return sizeof(type)      +
                 sizeof(size)      +
@@ -1194,17 +1194,17 @@ private:
 
    struct bitmap_information_header
    {
-      unsigned int   size;
-      unsigned int   width;
-      unsigned int   height;
+      unsigned int size;
+      unsigned int width;
+      unsigned int height;
       unsigned short planes;
       unsigned short bit_count;
-      unsigned int   compression;
-      unsigned int   size_image;
-      unsigned int   x_pels_per_meter;
-      unsigned int   y_pels_per_meter;
-      unsigned int   clr_used;
-      unsigned int   clr_important;
+      unsigned int compression;
+      unsigned int size_image;
+      unsigned int x_pels_per_meter;
+      unsigned int y_pels_per_meter;
+      unsigned int clr_used;
+      unsigned int clr_important;
 
       unsigned int struct_size()
       {
@@ -1234,7 +1234,7 @@ private:
       return ((v >> 8) | (v << 8));
    }
 
-   inline unsigned int flip(const unsigned int& v)
+   inline uint64_t flip(const unsigned int& v)
    {
       return (((v & 0xFF000000) >> 0x18) |
               ((v & 0x000000FF) << 0x18) |
@@ -1403,12 +1403,12 @@ private:
 
       bytes_per_pixel_ = bih.bit_count >> 3;
 
-      unsigned int padding = (4 - ((3 * width_) % 4)) % 4;
+      uint64_t padding = (4 - ((3 * width_) % 4)) % 4;
       char padding_data[4] = {0,0,0,0};
 
       create_bitmap();
 
-      for (unsigned int i = 0; i < height_; ++i)
+      for (uint64_t i = 0; i < height_; ++i)
       {
          unsigned char* data_ptr = row(height_ - i - 1); // read in inverted row order
 
@@ -1444,11 +1444,11 @@ private:
 
    std::string    file_name_;
    unsigned char* data_;
-   unsigned int   length_;
-   unsigned int   width_;
-   unsigned int   height_;
-   unsigned int   row_increment_;
-   unsigned int   bytes_per_pixel_;
+   uint64_t   length_;
+   uint64_t   width_;
+   uint64_t   height_;
+   uint64_t   row_increment_;
+   uint64_t   bytes_per_pixel_;
    channel_mode   channel_mode_;
 };
 
@@ -1460,10 +1460,10 @@ struct rgb_store
    unsigned char blue;
 };
 
-inline void rgb_to_ycbcr(const unsigned int& length, double* red, double* green, double* blue,
+inline void rgb_to_ycbcr(const uint64_t& length, double* red, double* green, double* blue,
                                                      double* y,   double* cb,    double* cr)
 {
-   unsigned int i = 0;
+   uint64_t i = 0;
 
    while (i < length)
    {
@@ -1477,10 +1477,10 @@ inline void rgb_to_ycbcr(const unsigned int& length, double* red, double* green,
    }
 }
 
-inline void ycbcr_to_rgb(const unsigned int& length, double* y,   double* cb,    double* cr,
+inline void ycbcr_to_rgb(const uint64_t& length, double* y,   double* cb,    double* cr,
                                                      double* red, double* green, double* blue)
 {
-   unsigned int i = 0;
+   uint64_t i = 0;
 
    while (i < length)
    {
@@ -1498,11 +1498,11 @@ inline void ycbcr_to_rgb(const unsigned int& length, double* y,   double* cb,   
    }
 }
 
-inline void subsample(const unsigned int& width,
-                      const unsigned int& height,
+inline void subsample(const uint64_t& width,
+                      const uint64_t& height,
                       const double* source,
-                      unsigned int& w,
-                      unsigned int& h,
+                      uint64_t& w,
+                      uint64_t& h,
                       double** dest)
 {
    /*  Single channel.  */
@@ -1529,8 +1529,8 @@ inline void subsample(const unsigned int& width,
       odd_height = true;
    }
 
-   unsigned int horizontal_upper = (odd_width)  ? w - 1 : w;
-   unsigned int vertical_upper   = (odd_height) ? h - 1 : h;
+   uint64_t horizontal_upper = (odd_width)  ? w - 1 : w;
+   uint64_t vertical_upper   = (odd_height) ? h - 1 : h;
 
    *dest = new double[w * h];
 
@@ -1538,9 +1538,9 @@ inline void subsample(const unsigned int& width,
    const double* itr1 = source;
    const double* itr2 = source + width;
 
-   for (unsigned int j = 0; j < vertical_upper; ++j)
+   for (uint64_t j = 0; j < vertical_upper; ++j)
    {
-      for (unsigned int i = 0; i < horizontal_upper; ++i, ++s_itr)
+      for (uint64_t i = 0; i < horizontal_upper; ++i, ++s_itr)
       {
           (*s_itr)  = *(itr1++);
           (*s_itr) += *(itr1++);
@@ -1564,7 +1564,7 @@ inline void subsample(const unsigned int& width,
 
    if (odd_height)
    {
-      for (unsigned int i = 0; i < horizontal_upper; ++i, ++s_itr)
+      for (uint64_t i = 0; i < horizontal_upper; ++i, ++s_itr)
       {
          (*s_itr) += (*(itr1++));
          (*s_itr) += (*(itr1++));
@@ -1578,11 +1578,11 @@ inline void subsample(const unsigned int& width,
    }
 }
 
-inline void upsample(const unsigned int& width,
-                     const unsigned int& height,
+inline void upsample(const uint64_t& width,
+                     const uint64_t& height,
                      const double* source,
-                     unsigned int& w,
-                     unsigned int& h,
+                     uint64_t& w,
+                     uint64_t& h,
                      double** dest)
 {
    /* Single channel. */
@@ -1596,9 +1596,9 @@ inline void upsample(const unsigned int& width,
          double* itr1  = *dest;
          double* itr2  = *dest + w;
 
-   for (unsigned int j = 0; j < height; ++j)
+   for (uint64_t j = 0; j < height; ++j)
    {
-      for (unsigned int i = 0; i < width; ++i, ++s_itr)
+      for (uint64_t i = 0; i < width; ++i, ++s_itr)
       {
           *(itr1++) = (*s_itr);
           *(itr1++) = (*s_itr);
@@ -1611,8 +1611,8 @@ inline void upsample(const unsigned int& width,
    }
 }
 
-inline void checkered_pattern(const unsigned int x_width,
-                              const unsigned int y_width,
+inline void checkered_pattern(const uint64_t x_width,
+                              const uint64_t y_width,
                               const unsigned char value,
                               const bitmap_image::color_plane color,
                               bitmap_image& image)
@@ -1628,11 +1628,11 @@ inline void checkered_pattern(const unsigned int x_width,
    bool setter_x = false;
    bool setter_y = true;
 
-   const unsigned int color_plane_offset = image.offset(color);
-   const unsigned int height = image.height();
-   const unsigned int width  = image.width();
+   const uint64_t color_plane_offset = image.offset(color);
+   const uint64_t height = image.height();
+   const uint64_t width  = image.width();
 
-   for (unsigned int y = 0; y < height; ++y)
+   for (uint64_t y = 0; y < height; ++y)
    {
       if (0 == (y % y_width))
       {
@@ -1641,7 +1641,7 @@ inline void checkered_pattern(const unsigned int x_width,
 
       unsigned char* row = image.row(y) + color_plane_offset;
 
-      for (unsigned int x = 0; x < width; ++x, row += image.bytes_per_pixel())
+      for (uint64_t x = 0; x < width; ++x, row += image.bytes_per_pixel())
       {
          if (0 == (x % x_width))
          {
@@ -1656,8 +1656,8 @@ inline void checkered_pattern(const unsigned int x_width,
    }
 }
 
-inline void checkered_pattern(const unsigned int x_width,
-                              const unsigned int y_width,
+inline void checkered_pattern(const uint64_t x_width,
+                              const uint64_t y_width,
                               const unsigned char red,
                               const unsigned char green,
                               const unsigned char blue,
@@ -1674,10 +1674,10 @@ inline void checkered_pattern(const unsigned int x_width,
    bool setter_x = false;
    bool setter_y = true;
 
-   const unsigned int height = image.height();
-   const unsigned int width  = image.width();
+   const uint64_t height = image.height();
+   const uint64_t width  = image.width();
 
-   for (unsigned int y = 0; y < height; ++y)
+   for (uint64_t y = 0; y < height; ++y)
    {
       if (0 == (y % y_width))
       {
@@ -1686,7 +1686,7 @@ inline void checkered_pattern(const unsigned int x_width,
 
       unsigned char* row = image.row(y);
 
-      for (unsigned int x = 0; x < width; ++x, row += image.bytes_per_pixel())
+      for (uint64_t x = 0; x < width; ++x, row += image.bytes_per_pixel())
       {
          if (0 == (x % x_width))
          {
@@ -1735,13 +1735,13 @@ inline void plasma(bitmap_image& image,
    }
    else
    {
-      rgb_store color = colormap[static_cast<unsigned int>(1000.0 * ((c1 + c2 + c3 + c4) / 4.0)) % 1000];
-      image.set_pixel(static_cast<unsigned int>(x),static_cast<unsigned int>(y),color.red,color.green,color.blue);
+      rgb_store color = colormap[static_cast<uint64_t>(1000.0 * ((c1 + c2 + c3 + c4) / 4.0)) % 1000];
+      image.set_pixel(static_cast<uint64_t>(x),static_cast<uint64_t>(y),color.red,color.green,color.blue);
    }
 }
 
-inline double psnr_region(const unsigned int& x,     const unsigned int& y,
-                          const unsigned int& width, const unsigned int& height,
+inline double psnr_region(const uint64_t& x,     const uint64_t& y,
+                          const uint64_t& width, const uint64_t& height,
                           const bitmap_image& image1, const bitmap_image& image2)
 {
    if (
@@ -1757,7 +1757,7 @@ inline double psnr_region(const unsigned int& x,     const unsigned int& y,
 
    double mse = 0.0;
 
-   for (unsigned int r = 0; r < height; ++r)
+   for (uint64_t r = 0; r < height; ++r)
    {
       const unsigned char* itr1     = image1.row(r + y) + x * image1.bytes_per_pixel();
       const unsigned char* itr1_end = itr1 + (width * image1.bytes_per_pixel());
@@ -1792,19 +1792,19 @@ inline void hierarchical_psnr_r(const double& x,     const double& y,
 {
    if ((width <= 4.0) || (height <= 4.0))
    {
-      double psnr = psnr_region(static_cast<unsigned int>(x),
-                                static_cast<unsigned int>(y),
-                                static_cast<unsigned int>(width),
-                                static_cast<unsigned int>(height),
+      double psnr = psnr_region(static_cast<uint64_t>(x),
+                                static_cast<uint64_t>(y),
+                                static_cast<uint64_t>(width),
+                                static_cast<uint64_t>(height),
                                 image1,image2);
 
       if (psnr < threshold)
       {
-         rgb_store c = colormap[static_cast<unsigned int>(1000.0 * (1.0 - (psnr / threshold)))];
-         image2.set_region(static_cast<unsigned int>(x),
-                           static_cast<unsigned int>(y),
-                           static_cast<unsigned int>(width + 1),
-                           static_cast<unsigned int>(height + 1),
+         rgb_store c = colormap[static_cast<uint64_t>(1000.0 * (1.0 - (psnr / threshold)))];
+         image2.set_region(static_cast<uint64_t>(x),
+                           static_cast<uint64_t>(y),
+                           static_cast<uint64_t>(width + 1),
+                           static_cast<uint64_t>(height + 1),
                            c.red,c.green,c.blue);
       }
    }
@@ -2075,7 +2075,7 @@ public:
       image_.set_pixel(x,y,pen_color_red_,pen_color_green_,pen_color_blue_);
    }
 
-   void pen_width(const unsigned int& width)
+   void pen_width(const uint64_t& width)
    {
       if ((width > 0) && (width < 4))
       {
@@ -2098,7 +2098,7 @@ private:
    image_drawer& operator =(const image_drawer& id);
 
    bitmap_image& image_;
-   unsigned int  pen_width_;
+   uint64_t  pen_width_;
    unsigned char pen_color_red_;
    unsigned char pen_color_green_;
    unsigned char pen_color_blue_;
